@@ -1,0 +1,14 @@
+# Запуск:        docker compose up -d --build
+# Журнал:        docker compose logs -f
+# Итоги цикла:   docker compose exec parser python -m afisha_parser status
+# Данные появятся в ./data/output на хосте.
+services:
+  parser:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      AFISHA_OUTPUT_DIR: /data/output
+    volumes:
+      - ./data:/data
+    stop_grace_period: 30s

@@ -1,0 +1,38 @@
+# Шаблон службы. Не редактируйте вручную — его заполняет deploy/install.sh
+# (подставляет пользователя и пути) и кладёт в /etc/systemd/system/afisha-parser.service.
+[Unit]
+Description=Afisha parser: автономный сбор афиши
+Documentation=file://@DATA@/README-service.txt
+After=network-online.target
+Wants=network-online.target
+# Если служба падает чаще 5 раз за 10 минут, systemd перестаёт её поднимать — значит, беда с настройками
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=@USER@
+Group=@GROUP@
+# Отсюда парсер читает .env, сюда же (AFISHA_OUTPUT_DIR) пишет данные
+WorkingDirectory=@DATA@
+ExecStart=@VENV@/bin/python -m afisha_parser daemon
+Environment=PYTHONUNBUFFERED=1
+# Кеш yt-dlp и прочего — внутри папки данных (домашняя папка для службы только на чтение)
+Environment=XDG_CACHE_HOME=@DATA@/.cache
+Restart=always
+RestartSec=60
+TimeoutStopSec=30
+# Парсер — фоновая задача, не мешаем остальному на сервере
+Nice=10
+IOSchedulingClass=idle
+# Защита: писать можно только в папку данных
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=@DATA@
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

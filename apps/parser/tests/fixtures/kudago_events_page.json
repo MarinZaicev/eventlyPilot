@@ -1,0 +1,69 @@
+{
+  "count": 4,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 101,
+      "title": "концерт группы «Пример»",
+      "short_title": "«Пример»",
+      "slug": "koncert-primer",
+      "tagline": "Большой осенний концерт",
+      "description": "<p>Акустический сет &amp; новые песни</p>",
+      "body_text": "Полное   описание\nконцерта.",
+      "dates": [
+        {"start": 1789056000, "end": 1789063200},
+        {"start": 1790438400, "end": 1790449200},
+        {"start": 1790352000, "end": 1790362800},
+        {"start": 1790352000, "end": 1790362800}
+      ],
+      "place": {
+        "id": 555,
+        "title": "дворец культуры «Пример»",
+        "address": "ул. Примерная, 1",
+        "subway": "Примерная",
+        "site_url": "https://example.org/dk",
+        "coords": {"lat": 55.751, "lon": 37.618}
+      },
+      "location": {"slug": "msk"},
+      "categories": ["concert"],
+      "tags": ["рок", "концерты"],
+      "age_restriction": "16",
+      "price": "от 1 500 до 3 000 рублей",
+      "is_free": false,
+      "images": [
+        {"image": "https://media.example.org/events/1.jpg", "source": {"name": "пресс-служба", "link": "https://example.org/press"}},
+        {"image": "https://media.example.org/events/1.jpg", "source": {}},
+        {"image": "https://media.example.org/events/2.jpg", "source": {}}
+      ],
+      "site_url": "https://kudago.com/msk/event/koncert-primer/"
+    },
+    {
+      "id": 102,
+      "title": "постоянная экспозиция музея",
+      "slug": "ekspoziciya",
+      "dates": [{"start": -62135433000, "end": 253370764800}],
+      "place": {"id": 556},
+      "categories": ["permanent_exhibitions"],
+      "age_restriction": 0,
+      "price": "",
+      "is_free": true,
+      "images": [],
+      "site_url": ""
+    },
+    {
+      "id": 103,
+      "title": "спектакль, который уже прошёл",
+      "slug": "proshel",
+      "dates": [{"start": 1788264000, "end": 1788274800}],
+      "price": "1000 рублей",
+      "is_free": false
+    },
+    {
+      "id": 104,
+      "title": "",
+      "slug": "bez-nazvaniya",
+      "dates": [{"start": 1790352000, "end": 1790362800}]
+    }
+  ]
+}
