@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1400" viewBox="0 0 900 1400">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="hsl(259,75%,38%)"/>
+      <stop offset="100%" stop-color="hsl(339,80%,16%)"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="1400" fill="url(#g)"/>
+
+  <circle cx="720" cy="240" r="230" fill="white" opacity=".08"/>
+  <circle cx="160" cy="1170" r="300" fill="white" opacity=".06"/>
+
+  <text x="70" y="1040"
+        font-family="Arial, sans-serif"
+        font-size="92"
+        font-weight="700"
+        fill="white">ЕДА</text>
+
+  <text x="74" y="1120"
+        font-family="Arial, sans-serif"
+        font-size="34"
+        letter-spacing="8"
+        fill="white"
+        opacity=".78">FOOD FEST</text>
+
+  <text x="74" y="1280"
+        font-family="Arial, sans-serif"
+        font-size="30"
+        fill="white"
+        opacity=".55">EVENTLY DEMO</text>
+</svg>

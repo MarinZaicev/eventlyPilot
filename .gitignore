@@ -1,0 +1,60 @@
+packages/db/.env
+
+# ==============================
+# Evently local/private files
+# ==============================
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Builds
+dist/
+**/dist/
+build/
+**/build/
+.vite/
+**/.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log
+logs/
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Tests / coverage
+coverage/
+**/coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Local backups
+*.backup
+*.bak
+
+*.dump
+packages/db/generated/

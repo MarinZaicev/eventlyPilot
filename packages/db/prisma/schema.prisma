@@ -1,0 +1,509 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../generated/prisma"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum EventStatus {
+  DRAFT
+  ACTIVE
+  CANCELLED
+  ARCHIVED
+}
+
+enum InteractionType {
+  IMPRESSION
+  OPEN
+  DWELL
+  FAVORITE
+  UNFAVORITE
+  TICKET_CLICK
+  SHARE
+  HIDE
+  // «Пойду» / отмена «Пойду»
+  GOING
+  NOT_GOING
+}
+
+// ============================================================
+// USERS
+// ============================================================
+
+model User {
+  id        String @id @default(uuid())
+  maxUserId String @unique
+
+  firstName   String?
+  lastName    String?
+  username    String?
+  avatarUrl   String?
+  displayName String?
+
+  latitude  Float?
+  longitude Float?
+
+  onboardingCompleted Boolean @default(false)
+
+  // Постоянный код для ссылок-приглашений «Пойдём вместе»
+  // (вместо MAX id, чтобы id не светился в ссылке).
+  inviteCode String? @unique
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  lastSeenAt DateTime @default(now())
+
+  interests    UserInterest[]
+  interactions Interaction[]
+  favorites    Favorite[]
+  comments     Comment[]
+  attendances  Attendance[]
+
+  @@index([lastSeenAt])
+}
+
+// ============================================================
+// CATEGORIES
+// ============================================================
+
+model Category {
+  id   String @id @default(uuid())
+  slug String @unique
+
+  name String
+  icon String?
+
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userInterests UserInterest[]
+  events        EventCategory[]
+
+  @@index([active, sortOrder])
+}
+
+// ============================================================
+// USER INTERESTS
+// ============================================================
+
+model UserInterest {
+  userId     String
+  categoryId String
+
+  // 1.0 = обычный интерес.
+  // В дальнейшем recommendation engine сможет изменять этот вес.
+  weight Float @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([userId, categoryId])
+  @@index([categoryId])
+}
+
+// ============================================================
+// VENUES
+// ============================================================
+
+model Venue {
+  id String @id @default(uuid())
+
+  // Позволяет привязать площадку к внешнему источнику.
+  source     String?
+  externalId String?
+
+  name    String
+  address String?
+  city    String?
+
+  latitude  Float?
+  longitude Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+
+  @@unique([source, externalId])
+  @@index([city])
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+
+model Event {
+  id String @id @default(uuid())
+
+  // Например:
+  // kudago
+  // timepad
+  // parser_vk
+  source String
+
+  // ID мероприятия во внешней системе.
+  externalId String
+
+  // slug города из пути парсера: msk, spb, ekb...
+  sourceCity String?
+
+  // когда событие последний раз присутствовало
+  // в полном snapshot источника
+  lastSeenAt DateTime?
+
+  title            String
+  shortDescription String? @db.Text
+  description      String? @db.Text
+
+  sourceUrl String? @db.Text
+  ticketUrl String? @db.Text
+
+  priceMin Int?
+  priceMax Int?
+
+  currency String @default("RUB")
+
+  isFree    Boolean @default(false)
+  ageRating Int?
+
+  status EventStatus @default(ACTIVE)
+
+  // В дальнейшем можно использовать как один
+  // из факторов рекомендаций.
+  popularityScore Float @default(0)
+
+  venueId String?
+  venue   Venue?  @relation(fields: [venueId], references: [id], onDelete: SetNull)
+
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  occurrences  EventOccurrence[]
+  images       EventImage[]
+  categories   EventCategory[]
+  interactions Interaction[]
+  favorites    Favorite[]
+  comments     Comment[]
+  attendances  Attendance[]
+  movie        EventMovie?
+
+  // Дедупликация: если это то же событие,
+  // что уже есть из другого источника
+  // (например, KudaGo и Timepad), здесь id
+  // основного события. Пользователям
+  // показываются только события с
+  // duplicateOfId = null.
+  duplicateOfId String?
+  duplicateOf   Event?  @relation("EventDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates    Event[] @relation("EventDuplicates")
+
+  @@unique([source, externalId])
+  @@index([status])
+  @@index([venueId])
+  @@index([createdAt])
+  @@index([popularityScore])
+  @@index([source, sourceCity, status])
+  @@index([duplicateOfId])
+}
+
+// ============================================================
+// EVENT DATES
+// ============================================================
+
+model EventOccurrence {
+  id String @id @default(uuid())
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  startsAt DateTime
+  endsAt   DateTime?
+
+  // Если конкретный сеанс имеет собственную ссылку на билет.
+  ticketUrl String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startsAt])
+  @@index([eventId, startsAt])
+}
+
+// ============================================================
+// EVENT IMAGES
+// ============================================================
+
+model EventImage {
+  id String @id @default(uuid())
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  url String @db.Text
+
+  position Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId, position])
+}
+
+// ============================================================
+// EVENT <-> CATEGORY
+// ============================================================
+
+model EventCategory {
+  eventId    String
+  categoryId String
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, categoryId])
+  @@index([categoryId])
+}
+
+// ============================================================
+// USER INTERACTIONS
+// ============================================================
+
+model Interaction {
+  id String @id @default(uuid())
+
+  userId  String
+  eventId String
+
+  type InteractionType
+
+  // Используем для DWELL:
+  // сколько миллисекунд пользователь смотрел карточку.
+  durationMs Int?
+
+  // Дополнительные данные:
+  //
+  // {
+  //   "feedPosition": 4,
+  //   "source": "feed"
+  // }
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, type, createdAt])
+  @@index([eventId, type])
+}
+
+// ============================================================
+// FAVORITES
+// ============================================================
+
+model Favorite {
+  userId  String
+  eventId String
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId])
+  @@index([eventId])
+}
+
+// ============================================================
+// ATTENDANCE («Пойду»)
+// ============================================================
+
+model Attendance {
+  userId  String
+  eventId String
+
+  // Ближайший сеанс на момент нажатия «Пойду» —
+  // по нему бот напомнит о событии накануне.
+  startsAt DateTime?
+
+  // Когда бот отправил напоминание (NULL — ещё не отправлял).
+  reminderSentAt DateTime?
+
+  // id пользователя в MAX (из проверенного initData Mini App) —
+  // кому бот отправит напоминание. NULL — открыто не из MAX.
+  maxRecipientId String?
+
+  // Кто позвал («Пойдём вместе»): User.id пригласившего.
+  invitedById String?
+
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId])
+  @@index([eventId])
+  @@index([invitedById])
+  @@index([startsAt, reminderSentAt])
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String
+  eventId   String
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, createdAt])
+  @@index([userId])
+}
+
+// ============================================================
+// GEOCODER CACHE
+// ============================================================
+
+model Place {
+  id String @id @default(uuid())
+
+  // Нормализованный запрос:
+  // "москва|метро маяковская"
+  queryKey String @unique
+
+  // Исходный запрос к геокодеру.
+  query String @db.Text
+
+  name        String
+  displayName String @db.Text
+
+  city        String?
+  countryCode String?
+
+  latitude  Float
+  longitude Float
+
+  provider   String  @default("nominatim")
+  externalId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([city])
+  @@index([name])
+}
+
+// ============================================================
+// MOVIE ENRICHMENT
+// ============================================================
+
+model EventMovie {
+  id String @id @default(uuid())
+
+  eventId String @unique
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  tmdbId    Int?
+  mediaType String?
+
+  title         String?
+  originalTitle String?
+  releaseYear   Int?
+
+  overview String? @db.Text
+
+  posterUrl   String? @db.Text
+  backdropUrl String? @db.Text
+
+  trailerEmbedUrl String? @db.Text
+  trailerUrl      String? @db.Text
+  trailerKey      String?
+
+  voteAverage Float?
+  runtime     Int?
+  ageRating   String?
+
+  genres Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tmdbId])
+}
+
+// ============================================================
+// FOOD PLACES — заведения «где поесть» из парсера
+// (output/app/places/<город>/latest.json; KudaGo и OpenStreetMap).
+// Не путать с Place — это кеш геокодера.
+// У OSM-заведений в интерфейсе ОБЯЗАТЕЛЬНА подпись attribution
+// («© участники OpenStreetMap») — условие лицензии ODbL.
+// ============================================================
+
+model FoodPlace {
+  id String @id @default(uuid())
+
+  // kudago | osm
+  source     String
+  externalId String
+
+  // slug города парсера: msk, spb, nsk…
+  city String
+
+  name String
+
+  // restaurant | cafe | coffee | bar | fast_food | bakery | canteen | other
+  kind String
+
+  cuisine    Json?
+  categories Json?
+
+  address   String?
+  latitude  Float?
+  longitude Float?
+  subway    String?
+
+  phone        String?
+  website      String? @db.Text
+  sourceUrl    String? @db.Text
+  openingHours String? @db.Text
+  description  String? @db.Text
+
+  // /media/events/... (скачанное фото) или внешняя ссылка
+  imageUrl String? @db.Text
+
+  attribution String?
+
+  contentHash String?
+
+  // false — заведение пропало из выгрузки (закрылось)
+  active     Boolean   @default(true)
+  lastSeenAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([source, externalId])
+  @@index([city, active, kind])
+  @@index([latitude, longitude])
+}

@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Builds
+dist
+**/dist
+build
+**/build
+.vite
+**/.vite
+
+# Existing local/generated data
+test-data
+evently.dump
+*.dump
+*.sql
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs
+**/logs
+
+# Coverage
+coverage
+**/coverage
+
+# Temporary / backups
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.backup
+*.before-*
+
+# IDE
+.idea
+.vscode
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Метрики Evently</title>
+<style>
+  :root {
+    --bg: #0b0b0f;
+    --surface: #111116;
+    --surface-2: #17171d;
+    --line: #26262e;
+    --ink: #f2f2f5;
+    --ink-2: rgba(242, 242, 245, 0.68);
+    --ink-3: rgba(242, 242, 245, 0.42);
+    --accent: #9d6bff;
+    --accent-wash: rgba(157, 107, 255, 0.10);
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 28px 16px 60px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  main { max-width: 1120px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+
+  h1 { margin: 0; font-size: 24px; letter-spacing: -0.01em; }
+  h1 span { color: var(--ink-3); font-weight: 600; }
+  .sub { margin: 4px 0 0; color: var(--ink-3); font-size: 12px; }
+
+  .controls { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .controls button {
+    padding: 7px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink-2);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .controls button[aria-pressed="true"] {
+    border-color: var(--accent);
+    color: var(--ink);
+  }
+
+  h2 {
+    margin: 34px 0 6px;
+    font-size: 16px;
+  }
+
+  .hint { margin: 0 0 14px; color: var(--ink-3); font-size: 12px; }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px;
+  }
+
+  .tile {
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .tile-label { color: var(--ink-2); font-size: 12px; }
+  .tile-value { margin-top: 6px; font-size: 28px; font-weight: 750; letter-spacing: -0.02em; }
+  .tile-delta { margin-top: 2px; color: var(--ink-3); font-size: 12px; }
+
+  .charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 12px;
+  }
+
+  .chart {
+    position: relative;
+    padding: 14px 14px 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .chart h3 { margin: 0; font-size: 13px; font-weight: 650; }
+  .chart p { margin: 2px 0 6px; color: var(--ink-3); font-size: 11px; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+  .axis { fill: var(--ink-3); font-size: 12px; }
+  .grid { stroke: var(--line); stroke-width: 1; }
+  .endlabel { fill: var(--ink); font-size: 13px; font-weight: 700; }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    padding: 6px 9px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    transform: translate(-50%, -110%);
+    opacity: 0;
+    transition: opacity 0.08s;
+  }
+
+  .tooltip small { display: block; color: var(--ink-3); font-size: 11px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th, td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--ink-3); font-weight: 600; font-size: 12px; }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+
+  .compare-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: var(--ink-2); }
+
+  input[type="date"] {
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    color-scheme: dark;
+  }
+
+  details summary { cursor: pointer; color: var(--ink-2); margin: 34px 0 12px; }
+
+  .error {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink-2);
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Evently <span>· метрики ленты</span></h1>
+      <p class="sub" id="generated">Загрузка…</p>
+    </div>
+    <div class="controls" role="group" aria-label="Период">
+      <button type="button" data-days="7">7 дней</button>
+      <button type="button" data-days="14">14 дней</button>
+      <button type="button" data-days="30">30 дней</button>
+    </div>
+  </header>
+
+  <div id="app"></div>
+</main>
+
+<script>
+(() => {
+  const params = new URLSearchParams(location.search)
+  const key = params.get('key') || ''
+  let days = Number(params.get('days')) || 14
+
+  const pct = (value) =>
+    value === null ? '—' : `${(value * 100).toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%`
+  const num = (value, digits = 1) =>
+    value === null ? '—' : value.toLocaleString('ru-RU', { maximumFractionDigits: digits })
+  const ratio = (a, b) => (b > 0 ? a / b : null)
+  const sum = (rows, field) => rows.reduce((total, row) => total + row[field], 0)
+  const shortDate = (iso) => {
+    const [, m, d] = iso.split('-')
+    return `${d}.${m}`
+  }
+
+  // Одна метрика = как её считать из набора дней + как показывать.
+  const METRICS = [
+    {
+      id: 'engagement',
+      title: 'Вовлечённость',
+      note: 'Доля показанных карточек с реакцией: лайк, «Пойду», открытие, «Поделиться», билеты',
+      calc: (rows) => ratio(sum(rows, 'engaged'), sum(rows, 'shown')),
+      format: pct,
+      better: 'up',
+    },
+    {
+      id: 'tickets',
+      title: 'Переходы к билетам',
+      note: 'Доля показанных карточек, после которых открыли билеты',
+      calc: (rows) => ratio(sum(rows, 'tickets'), sum(rows, 'shown')),
+      format: pct,
+      better: 'up',
+    },
+    {
+      id: 'hidden',
+      title: '«Не интересно»',
+      note: 'Доля показанных карточек, которые скрыли. Меньше — точнее лента',
+      calc: (rows) => ratio(sum(rows, 'hidden'), sum(rows, 'shown')),
+      format: pct,
+      better: 'down',
+    },
+    {
+      id: 'interest',
+      title: 'Попадание в интересы',
+      note: 'Доля показов из категорий, выбранных пользователем',
+      calc: (rows) => ratio(sum(rows, 'interestMatched'), sum(rows, 'interestBase')),
+      format: pct,
+      better: 'up',
+    },
+    {
+      id: 'diversity',
+      title: 'Разнообразие',
+      note: 'Сколько разных категорий в среднем на 20 карточек подряд',
+      calc: (rows) => ratio(sum(rows, 'diversityCategoriesSum'), sum(rows, 'diversityWindows')),
+      format: (value) => num(value, 1),
+      better: 'up',
+    },
+    {
+      id: 'dwell',
+      title: 'Время на карточке',
+      note: 'Среднее, секунд (просмотры дольше минуты считаются как минута)',
+      calc: (rows) => {
+        const value = ratio(sum(rows, 'dwellTotalMs'), sum(rows, 'dwellCount'))
+        return value === null ? null : value / 1000
+      },
+      format: (value) => (value === null ? '—' : `${num(value, 1)} с`),
+      better: 'up',
+    },
+    {
+      id: 'quick',
+      title: 'Пролистали сразу',
+      note: 'Доля карточек, просмотренных меньше 1,5 секунды',
+      calc: (rows) => ratio(sum(rows, 'quickSwipes'), sum(rows, 'dwellCount')),
+      format: pct,
+      better: 'down',
+    },
+    {
+      id: 'users',
+      title: 'Активные пользователи',
+      note: 'В среднем за день',
+      calc: (rows) => (rows.length ? sum(rows, 'activeUsers') / rows.length : null),
+      format: (value) => num(value, 1),
+      better: 'up',
+      perDay: (row) => row.activeUsers,
+    },
+  ]
+
+  function deltaText(metric, before, after) {
+    if (before === null || after === null) return 'нет данных для сравнения'
+
+    const isPercent = metric.format === pct
+    const diff = isPercent ? (after - before) * 100 : after - before
+
+    if (Math.abs(diff) < 0.05) return 'без изменений'
+
+    const arrow = diff > 0 ? '▲' : '▼'
+    const good = (diff > 0) === (metric.better === 'up')
+    const value = `${diff > 0 ? '+' : '−'}${Math.abs(diff).toLocaleString('ru-RU', { maximumFractionDigits: 1 })}${isPercent ? ' п.п.' : ''}`
+
+    return `${arrow} ${value} · ${good ? 'лучше' : 'хуже'}`
+  }
+
+  // ---------- line chart (one series, inline SVG) ----------
+  function lineChart(metric, rows) {
+    const W = 420
+    const H = 170
+    const pad = { l: 44, r: 52, t: 12, b: 24 }
+
+    const values = rows.map((row) => (metric.perDay ? metric.perDay(row) : metric.calc([row])))
+    const present = values.filter((value) => value !== null)
+    const max = Math.max(...present, 0)
+    const niceMax = niceCeil(max === 0 ? 1 : max * 1.1)
+
+    const x = (index) => pad.l + (rows.length === 1 ? 0 : (index * (W - pad.l - pad.r)) / (rows.length - 1))
+    const y = (value) => pad.t + (H - pad.t - pad.b) * (1 - value / niceMax)
+
+    const ticks = [0, niceMax / 2, niceMax]
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric.title} по дням">`
+
+    for (const tick of ticks) {
+      svg += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${y(tick)}" y2="${y(tick)}"/>`
+      svg += `<text class="axis" x="${pad.l - 8}" y="${y(tick) + 3}" text-anchor="end">${metric.format(tick)}</text>`
+    }
+
+    const step = Math.max(1, Math.ceil(rows.length / 5))
+
+    rows.forEach((row, index) => {
+      if (index % step === 0 || index === rows.length - 1) {
+        svg += `<text class="axis" x="${x(index)}" y="${H - 6}" text-anchor="middle">${shortDate(row.date)}</text>`
+      }
+    })
+
+    // Линия рвётся на днях без данных.
+    const segments = []
+    let current = []
+
+    values.forEach((value, index) => {
+      if (value === null) {
+        if (current.length) segments.push(current)
+        current = []
+      } else {
+        current.push([x(index), y(value)])
+      }
+    })
+
+    if (current.length) segments.push(current)
+
+    for (const segment of segments) {
+      const path = segment.map(([px, py], i) => `${i ? 'L' : 'M'}${px},${py}`).join(' ')
+
+      if (segment.length > 1) {
+        const area = `${path} L${segment[segment.length - 1][0]},${y(0)} L${segment[0][0]},${y(0)} Z`
+        svg += `<path d="${area}" fill="var(--accent-wash)"/>`
+      }
+
+      svg += `<path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`
+    }
+
+    // Конечная точка и подпись последнего значения.
+    const lastIndex = values.map((value) => value !== null).lastIndexOf(true)
+
+    if (lastIndex !== -1) {
+      const px = x(lastIndex)
+      const py = y(values[lastIndex])
+      svg += `<circle cx="${px}" cy="${py}" r="6" fill="var(--surface)"/>`
+      svg += `<circle cx="${px}" cy="${py}" r="4" fill="var(--accent)"/>`
+      svg += `<text class="endlabel" x="${px + 9}" y="${py + 4}">${metric.format(values[lastIndex])}</text>`
+    }
+
+    svg += `<line class="cross" x1="0" x2="0" y1="${pad.t}" y2="${H - pad.b}" stroke="var(--ink-3)" stroke-width="1" opacity="0"/>`
+    svg += `<circle class="hoverdot" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2" opacity="0"/>`
+    svg += `<rect class="hit" x="${pad.l - 10}" y="0" width="${W - pad.l - pad.r + 20}" height="${H}" fill="transparent"/>`
+    svg += '</svg>'
+
+    return { svg, values, x, y, W }
+  }
+
+  function niceCeil(value) {
+    const power = 10 ** Math.floor(Math.log10(value))
+    for (const step of [1, 2, 2.5, 5, 10]) {
+      if (step * power >= value) return step * power
+    }
+    return 10 * power
+  }
+
+  function attachHover(card, metric, rows, chart) {
+    const svg = card.querySelector('svg')
+    const cross = svg.querySelector('.cross')
+    const dot = svg.querySelector('.hoverdot')
+    const tip = card.querySelector('.tooltip')
+    const hit = svg.querySelector('.hit')
+
+    const move = (event) => {
+      const box = svg.getBoundingClientRect()
+      const scale = chart.W / box.width
+      const sx = (event.clientX - box.left) * scale
+
+      let best = 0
+      rows.forEach((_, index) => {
+        if (Math.abs(chart.x(index) - sx) < Math.abs(chart.x(best) - sx)) best = index
+      })
+
+      const value = chart.values[best]
+      const px = chart.x(best)
+
+      cross.setAttribute('x1', px)
+      cross.setAttribute('x2', px)
+      cross.setAttribute('opacity', '1')
+
+      if (value !== null) {
+        dot.setAttribute('cx', px)
+        dot.setAttribute('cy', chart.y(value))
+        dot.setAttribute('opacity', '1')
+      } else {
+        dot.setAttribute('opacity', '0')
+      }
+
+      const row = rows[best]
+      tip.innerHTML = `${metric.format(value)}<small>${shortDate(row.date)} · показов: ${row.shown.toLocaleString('ru-RU')}</small>`
+      tip.style.left = `${(px / scale) + (svg.getBoundingClientRect().left - card.getBoundingClientRect().left)}px`
+      tip.style.top = `${(value !== null ? chart.y(value) : 40) / scale + (svg.getBoundingClientRect().top - card.getBoundingClientRect().top)}px`
+      tip.style.opacity = '1'
+    }
+
+    const leave = () => {
+      cross.setAttribute('opacity', '0')
+      dot.setAttribute('opacity', '0')
+      tip.style.opacity = '0'
+    }
+
+    hit.addEventListener('pointermove', move)
+    hit.addEventListener('pointerdown', move)
+    hit.addEventListener('pointerleave', leave)
+  }
+
+  // ---------- render ----------
+  function render(data) {
+    const rows = data.days
+    const app = document.getElementById('app')
+
+    document.getElementById('generated').textContent =
+      `Обновлено ${new Date(data.generatedAt).toLocaleString('ru-RU')} · дни по часовому поясу ${data.timeZone} · ` +
+      `событий в ленте хоть раз: ${data.totals.shownEvents.toLocaleString('ru-RU')} из ${data.totals.activeEvents.toLocaleString('ru-RU')} актуальных · ` +
+      `пользователей всего: ${data.totals.users.toLocaleString('ru-RU')}`
+
+    const half = Math.min(7, Math.floor(rows.length / 2))
+    const last = rows.slice(-half)
+    const previous = rows.slice(-half * 2, -half)
+
+    let html = `<h2>Последние ${half} дн. в сравнении с предыдущими ${half}</h2>`
+    html += '<div class="tiles">'
+
+    for (const metric of METRICS) {
+      const now = metric.calc(last)
+      const before = metric.calc(previous)
+      html += `<div class="tile"><div class="tile-label">${metric.title}</div>
+        <div class="tile-value">${metric.format(now)}</div>
+        <div class="tile-delta">${deltaText(metric, before, now)}</div></div>`
+    }
+
+    html += '</div>'
+    html += '<h2>По дням</h2><p class="hint">Наведите на график — значение и число показов за день.</p><div class="charts">'
+
+    METRICS.forEach((metric, index) => {
+      html += `<div class="chart" data-index="${index}"><h3>${metric.title}</h3><p>${metric.note}</p><div class="svg-slot"></div><div class="tooltip"></div></div>`
+    })
+
+    html += '</div>'
+
+    // До / после выбранной даты (например, выкатки новой ленты).
+    const defaultSplit = rows[Math.max(0, rows.length - half)].date
+    html += `<h2>До и после</h2>
+      <p class="hint">Например, дата выкатки новой версии ленты.</p>
+      <div class="compare-controls"><label for="split">Сравнить до и после</label>
+      <input type="date" id="split" value="${defaultSplit}" min="${rows[0].date}" max="${rows[rows.length - 1].date}"></div>
+      <div class="table-wrap"><table id="compare"></table></div>`
+
+    html += `<details><summary>Таблица по дням</summary><div class="table-wrap"><table>
+      <thead><tr><th>День</th><th>Показы</th>${METRICS.map((m) => `<th>${m.title}</th>`).join('')}</tr></thead><tbody>
+      ${rows.slice().reverse().map((row) => `<tr><td>${shortDate(row.date)}</td><td>${row.shown.toLocaleString('ru-RU')}</td>${METRICS.map((m) => `<td>${m.format(m.perDay ? m.perDay(row) : m.calc([row]))}</td>`).join('')}</tr>`).join('')}
+      </tbody></table></div></details>`
+
+    app.innerHTML = html
+
+    app.querySelectorAll('.chart').forEach((card) => {
+      const metric = METRICS[Number(card.dataset.index)]
+      const chart = lineChart(metric, rows)
+      card.querySelector('.svg-slot').innerHTML = chart.svg
+      attachHover(card, metric, rows, chart)
+    })
+
+    const renderCompare = () => {
+      const split = document.getElementById('split').value
+      const before = rows.filter((row) => row.date < split)
+      const after = rows.filter((row) => row.date >= split)
+
+      document.getElementById('compare').innerHTML =
+        `<thead><tr><th>Метрика</th><th>До (${before.length} дн.)</th><th>После (${after.length} дн.)</th><th>Изменение</th></tr></thead><tbody>` +
+        METRICS.map((metric) => {
+          const a = metric.calc(before)
+          const b = metric.calc(after)
+          return `<tr><td>${metric.title}</td><td>${metric.format(a)}</td><td>${metric.format(b)}</td><td>${deltaText(metric, a, b)}</td></tr>`
+        }).join('') +
+        `<tr><td>Показы карточек</td><td>${sum(before, 'shown').toLocaleString('ru-RU')}</td><td>${sum(after, 'shown').toLocaleString('ru-RU')}</td><td></td></tr></tbody>`
+    }
+
+    document.getElementById('split').addEventListener('change', renderCompare)
+    renderCompare()
+  }
+
+  async function load() {
+    document.querySelectorAll('.controls button').forEach((button) => {
+      button.setAttribute('aria-pressed', String(Number(button.dataset.days) === days))
+    })
+
+    try {
+      const response = await fetch(`${location.pathname.replace(/\/$/, '')}/data?key=${encodeURIComponent(key)}&days=${days}`)
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      render(await response.json())
+    } catch (error) {
+      document.getElementById('app').innerHTML = `<div class="error">Не удалось загрузить метрики (${error.message}). Проверьте ключ в адресе.</div>`
+    }
+  }
+
+  document.querySelectorAll('.controls button').forEach((button) => {
+    button.addEventListener('click', () => {
+      days = Number(button.dataset.days)
+      const url = new URL(location.href)
+      url.searchParams.set('days', String(days))
+      history.replaceState(null, '', url)
+      load()
+    })
+  })
+
+  load()
+})()
+</script>
+</body>
+</html>

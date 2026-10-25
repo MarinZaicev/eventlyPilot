@@ -1,0 +1,31 @@
+# Evently: координаты площадок по адресу (#35).
+# Пользовательская служба systemd — работает без входа в систему
+# (нужно один раз: sudo loginctl enable-linger matatik).
+#
+# Установка:
+#   mkdir -p ~/.config/systemd/user
+#   cp ~/projects/evently/deploy/evently-geocoder.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now evently-geocoder
+#
+# Журнал:     journalctl --user -u evently-geocoder -f
+# Состояние:  systemctl --user status evently-geocoder
+# Остановить: systemctl --user stop evently-geocoder
+
+[Unit]
+Description=Evently: координаты площадок (Nominatim)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# bash -lc — чтобы подхватить PATH пользователя (pnpm, node).
+ExecStart=/bin/bash -lc 'cd "$HOME/projects/evently" && exec pnpm --filter @evently/server exec tsx src/scripts/geocode-venues.ts --apply --loop'
+Restart=always
+RestartSec=60
+# Скрипт сам останавливается после текущей площадки по SIGTERM.
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+[Install]
+WantedBy=default.target

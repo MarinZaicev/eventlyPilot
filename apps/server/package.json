@@ -1,0 +1,24 @@
+{
+  "name": "@evently/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@evently/db": "workspace:*",
+    "@evently/shared": "workspace:*",
+    "@fastify/cors": "^11.0.0",
+    "dotenv": "^17.0.0",
+    "fastify": "^5.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "5.9.3"
+  }
+}

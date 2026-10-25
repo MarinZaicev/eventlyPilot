@@ -1,0 +1,13 @@
+{
+  "name": "evently",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.27.0",
+  "scripts": {
+    "dev:server": "pnpm --filter @evently/server dev",
+    "start:server": "pnpm --filter @evently/server start",
+    "typecheck:server": "pnpm --filter @evently/server typecheck",
+    "dev:miniapp": "pnpm --filter ./apps/miniapp dev --host 0.0.0.0",
+    "start:miniapp": "pnpm --filter ./apps/miniapp serve"
+  }
+}

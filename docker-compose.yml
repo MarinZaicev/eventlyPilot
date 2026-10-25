@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: evently-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: evently
+      POSTGRES_PASSWORD: evently_dev_password
+      POSTGRES_DB: evently
+
+    ports:
+      - "127.0.0.1:5432:5432"
+
+    volumes:
+      - evently_postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evently -d evently"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  evently_postgres_data:
